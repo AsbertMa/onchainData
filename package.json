@@ -1,0 +1,21 @@
+{
+  "name": "mockdata",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev -r dotenv/config --transpile-only --no-notify --exit-child src/index.ts",
+    "build": "tsc",
+    "start": "node -r dotenv/config dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.1.4",
+    "mysql2": "^3.3.1",
+    "sequelize": "^6.31.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.4"
+  }
+}
