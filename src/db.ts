@@ -199,10 +199,10 @@ export const Block = sequelize.define('Blcok', {
   gasUsed: {
     type: DataTypes.INTEGER
   },
-  isFinalized: {
+  isTrunk: {
     type: DataTypes.BOOLEAN
   },
-  isTrunk: {
+  com: {
     type: DataTypes.BOOLEAN
   },
   parentID: {
@@ -236,12 +236,27 @@ export const Block = sequelize.define('Blcok', {
   tableName: 'block'
 })
 
-export async function create() {
-  const force = !!process.env.DB_FORCE
+export const Status = sequelize.define('Status', {
+  id: {
+    primaryKey: true,
+    autoIncrement: true,
+    type: DataTypes.INTEGER.UNSIGNED
+  },
+  key: {
+    type: DataTypes.STRING,
+    unique: true
+  },
+  value: DataTypes.STRING,
+}, {
+  tableName: 'status'
+})
+
+export async function create(force: boolean) {
   await Clause.sync({force})
   await Event.sync({force})
   await Transfer.sync({force})
   await ContractCreation.sync({force})
   await Tx.sync({force})
   await Block.sync({force})
+  await Status.sync({force})
 }

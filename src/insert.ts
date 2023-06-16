@@ -1,13 +1,13 @@
-import { Block, Clause, Tx, Event, Transfer, ContractCreation } from './db'
+import { Block, Clause, Tx, Event, Transfer, ContractCreation, Status } from './db'
 
 export async function insertBlock(block: any) {
-  const b = Block.build({
+  const b = {
     id: block.id,
     number: block.number,
     beneficiary: block.beneficiary,
     gasLimit: block.gasLimit,
     gasUsed: block.gasUsed,
-    isFinalized: block.isFinalized,
+    com: block.com,
     isTrunk: block.isTrunk,
     parentID: block.parentID,
     receiptsRoot: block.receiptsRoot,
@@ -20,13 +20,13 @@ export async function insertBlock(block: any) {
     txsRoot: block.txsRoot,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-  })
-  await b.save()
+  }
+  await Block.upsert(b)
 }
 
 export async function insertTx(block: any) {
   block.transactions.forEach(async (item: any, index: number) => {
-    const tx = Tx.build({
+    const tx = {
       id: item.id,
       index: index,
       blockID: block.id,
@@ -46,10 +46,19 @@ export async function insertTx(block: any) {
       size: item.size,
       createdAt: Date.now(),
       updatedAt: Date.now()
-    })
+    }
 
-    await tx.save()
+    await Tx.upsert(tx)
   })
+}
+
+export async function insertStatus(key: string, value: string) {
+  const data = {
+    key,
+    value
+  }
+
+  Status.upsert(data)
 }
 
 export async function insertClause(block: any) {
@@ -98,14 +107,14 @@ export async function insertClause(block: any) {
 
         // transfer
         outputs[index].transfers.forEach(async (item: any, ti: number) => {
-          const event = Transfer.build({
+          const transfer = Transfer.build({
             clauseID,
             index: ti,
             sender: item.sender,
             recipient: item.recipient,
             amount: item.amount
           })
-          await event.save()
+          await transfer.save()
         })
       }
 
