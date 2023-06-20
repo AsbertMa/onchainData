@@ -1,11 +1,17 @@
 import { insertBlock, insertTx, insertClause, insertStatus } from './insert'
-import { create } from './db'
+import { create, sequelize } from './db'
 import { syncInfos, fetchBlock } from './chainSync'
 
 async function insert(block: any) {
-  await insertBlock(block)
-  await insertTx(block)
-  await insertClause(block)
+  const t = await sequelize.transaction()
+  try {
+    await insertBlock(block, t)
+    await insertTx(block, t)
+    await insertClause(block, t)
+    await t.commit()
+  } catch (error) {
+    await t.rollback()
+  }
 }
 
 async function runSync(_sync: syncInfos) {
@@ -13,18 +19,13 @@ async function runSync(_sync: syncInfos) {
   for (; ;) {
     const finalized = _sync.getFinalized()
     let current = _sync.getNext()
-    console.log('sync', current)
     if ( _sync.getBest() && (_sync.getBest().number as number) >= current) {
-      console.log('sync', 'fetch ' + current)
       const block = await fetchBlock(current)
       await insert(block)
       await insertStatus(keyFinalized, finalized.id)
       
       if (current === _sync.getBest().number) {
-        console.log('current', current)
-        console.info('start listen from ', _sync.getBest().number)
         _sync.setNext(++current)
-
         _sync.onBest(
           async (best) => {
             let next = _sync.getNext()
