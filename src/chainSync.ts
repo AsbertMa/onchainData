@@ -55,11 +55,9 @@ export async function syncInfos(): Promise<syncInfos> {
       const now = await getBestBlock()
       const nowFilalized = await getFinalizedBlock()
       if (bestBlock && now.id !== bestBlock.id) {
-        console.log('set best', now)
         setBest(now)
       }
       if (finalized && nowFilalized.id !== finalized.id) {
-        console.log('set finalized', nowFilalized)
         setFinalized(nowFilalized)
       }
       await sleep(2000)

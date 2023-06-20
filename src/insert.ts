@@ -1,6 +1,7 @@
 import { Block, Clause, Tx, Event, Transfer, ContractCreation, Status } from './db'
+import { Transaction } from 'sequelize'
 
-export async function insertBlock(block: any) {
+export async function insertBlock(block: any, t: Transaction) {
   const b = {
     id: block.id,
     number: block.number,
@@ -21,14 +22,14 @@ export async function insertBlock(block: any) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-  await Block.upsert(b)
+  await Block.upsert(b, {transaction: t})
 }
 
-export async function insertTx(block: any) {
-  block.transactions.forEach(async (item: any, index: number) => {
+export async function insertTx(block: any, t: Transaction) {
+  for (const [i, item] of block.transactions.entries()) {
     const tx = {
       id: item.id,
-      index: index,
+      index: i,
       blockID: block.id,
       chainTag: item.chainTag,
       delegator: item.delegator,
@@ -47,9 +48,8 @@ export async function insertTx(block: any) {
       createdAt: Date.now(),
       updatedAt: Date.now()
     }
-
-    await Tx.upsert(tx)
-  })
+    await Tx.upsert(tx, {transaction: t})
+  }
 }
 
 export async function insertStatus(key: string, value: string) {
@@ -58,39 +58,44 @@ export async function insertStatus(key: string, value: string) {
     value
   }
 
-  Status.upsert(data)
+  await Status.upsert(data)
 }
 
-export async function insertClause(block: any) {
-  block.transactions.forEach((tx: any) => {
+export async function insertClause(block: any, t: Transaction) {
+  // let clauses = []
+  // let contractCreationList = []
+  // let events = []
+  // let transfers = []
+
+  for (const tx of block.transactions) {
     const outputs = tx.outputs
-    tx.clauses.forEach(async (clause: any, index: number) => {
-      const item = Clause.build({
+    for (const [ci, item] of tx.clauses.entries()) {
+      const clause = {
         txID: tx.id,
-        index: index,
-        to: clause.to,
-        data: clause.data,
-        value: clause.value,
+        index: ci,
+        to: item.to,
+        data: item.data,
+        value: item.value,
         createdAt: Date.now(),
         updatedAt: Date.now()
-      })
-
-      const temp: any = await item.save()
-      const clauseID: number = temp.id
-
+      }
+      const temp: any = await Clause.upsert(clause, {transaction: t})
+      const clauseID = temp.id
       if (outputs.length) {
         // contract creation
-        if (outputs[index].contractAddress) {
-          const ca = ContractCreation.build({
-            clauseID,
-            address: outputs[index].contractAddress
-          })
+        if (outputs[ci].contractAddress) {
 
-          await ca.save()
+          const contractCreation = {
+            clauseID,
+            address: outputs[ci].contractAddress
+          }
+
+          await ContractCreation.upsert(contractCreation, {transaction: t})
         }
+
         // events
-        outputs[index].events.forEach(async (item: any, ei: number) => {
-          const event = Event.build({
+        for (const [ei, item] of outputs[ci].events.entries()) {
+          const event = {
             clauseID,
             index: ei,
             contractAddr: item.address,
@@ -100,24 +105,24 @@ export async function insertClause(block: any) {
             topic2: item.topics[2],
             topic3: item.topics[3],
             topic4: item.topics[4]
-          })
+          }
 
-          await event.save()
-        })
+          await Event.upsert(event, {transaction: t})
+        }
 
-        // transfer
-        outputs[index].transfers.forEach(async (item: any, ti: number) => {
-          const transfer = Transfer.build({
+        // transfers
+        for (const [ti, item] of outputs[ci].transfers.entries()) {
+          const transfer = {
             clauseID,
             index: ti,
             sender: item.sender,
             recipient: item.recipient,
             amount: item.amount
-          })
-          await transfer.save()
-        })
-      }
+          }
 
-    })
-  })
+          await Transfer.upsert(transfer, {transaction: t})
+        }
+      }
+    }
+  }
 }
