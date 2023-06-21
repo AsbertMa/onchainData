@@ -79,7 +79,7 @@ export async function insertClause(block: any, t: Transaction) {
         createdAt: Date.now(),
         updatedAt: Date.now()
       }
-      const temp: any = await Clause.upsert(clause, {transaction: t})
+      const temp: any = await Clause.create(clause, {transaction: t})
       const clauseID = temp.id
       if (outputs.length) {
         // contract creation
@@ -90,7 +90,7 @@ export async function insertClause(block: any, t: Transaction) {
             address: outputs[ci].contractAddress
           }
 
-          await ContractCreation.upsert(contractCreation, {transaction: t})
+          await ContractCreation.create(contractCreation, {transaction: t})
         }
 
         // events
@@ -107,7 +107,7 @@ export async function insertClause(block: any, t: Transaction) {
             topic4: item.topics[4]
           }
 
-          await Event.upsert(event, {transaction: t})
+          await Event.create(event, {transaction: t})
         }
 
         // transfers
@@ -120,7 +120,7 @@ export async function insertClause(block: any, t: Transaction) {
             amount: item.amount
           }
 
-          await Transfer.upsert(transfer, {transaction: t})
+          await Transfer.create(transfer, {transaction: t})
         }
       }
     }
