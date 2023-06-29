@@ -36,12 +36,18 @@ export async function syncInfos(): Promise<syncInfos> {
   let finalized: any = await getFinalizedBlock()
   let nextBlock: number = parseInt(process.env.BLOCK_FROM!)
 
-  let cbBest: any
+  let cbBest: Array<(best: number) => Promise<void>> = []
   let cbFinalized: any
 
   function setBest(block: any) {
-    bestBlock = block
-    cbBest && cbBest(bestBlock.number)
+    bestBlock = block;
+    (async () => {
+      if (cbBest.length) {
+        for(let i = 0; i < cbBest.length; i++) {
+          cbBest[i] && await cbBest[i](bestBlock.number)
+        }
+      }
+    })()
   }
 
   function setFinalized(block: any) {
@@ -50,7 +56,6 @@ export async function syncInfos(): Promise<syncInfos> {
   }
 
   async function task() {
-    console.log("start")
     for (; ;) {
       const now = await getBestBlock()
       const nowFilalized = await getFinalizedBlock()
@@ -81,7 +86,7 @@ export async function syncInfos(): Promise<syncInfos> {
       return finalized
     },
     onBest: (cb: (best: number) => Promise<void>) => {
-      cbBest = cb
+      cbBest.push(cb)
     },
     onFinalized: (cb: (blockId: string) => Promise<void>) => {
       cbFinalized = cb

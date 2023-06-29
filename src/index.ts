@@ -1,5 +1,6 @@
 import { insertBlock, insertTx, insertClause, insertStatus } from './insert'
 import { create, sequelize } from './db'
+import { trunkCheck } from './headChecker'
 import { syncInfos, fetchBlock } from './chainSync'
 
 async function insert(block: any) {
@@ -43,6 +44,8 @@ async function runSync(_sync: syncInfos) {
             }
           }
         )
+
+        _sync.onBest(trunkCheck)
 
         _sync.onFinalized(async (blockId) => {
           await insertStatus(keyFinalized, blockId)
